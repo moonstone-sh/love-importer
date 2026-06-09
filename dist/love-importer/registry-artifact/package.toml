@@ -1,0 +1,29 @@
+[package]
+name = "moonstone/love-importer"
+version = "0.1.1"
+kind = "bin"
+description = "Exported moonstone/love-importer package"
+
+[[artifacts]]
+id = "bin-any"
+kind = "bin"
+target = "any"
+lua_api = "5.1"
+lua_abi = "5.1"
+format = "tar.gz"
+url = "blobs/b3/0f/86/0f860076da3545417a28daccdb3420dedf5728a22a6e2a62ce332c778f3cd785.tar.gz"
+hash = "b3:0f860076da3545417a28daccdb3420dedf5728a22a6e2a62ce332c778f3cd785"
+recipe_hash = "b3:4abc0a34c69dc8641141664fd6be89d58dc70d2cbdff6c8ce8e2d3a067a36bb1"
+bytes = 10824
+
+runtime = "lua@5.1"
+
+[artifacts.materialize]
+type = "archive"
+strip_components = 0
+
+[[artifacts.provides]]
+kind = "bin_lua"
+name = "love-importer"
+path = "bin/love-importer"
+entry_point = "libexec/love-importer/src/main.lua"

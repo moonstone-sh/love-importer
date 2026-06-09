@@ -1,0 +1,16 @@
+[[package]]
+artifact_hash = "b3:90be1a58ef8c0c97bb654877058b775fd9e6b94133cc641fe80c124a5582fe99"
+constellation = "default"
+kind = "bin"
+link_mode = ""
+lua_abi = "5.1"
+name = "moonstone/ballad"
+recipe_hash = "b3:b6afbf600346cfc47600f3f24d82683933d7658bae46c7347c3569f9404897ff"
+reproducible = true
+resolver = "moonstone"
+roles = [ "tool" ]
+runtime = "5.1"
+source = "https://moonstone.sh/registry/v0"
+source_hash = ""
+target = "native"
+version = "0.2.3"
