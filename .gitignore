@@ -1,0 +1,4 @@
+.moonstone/
+.ballad/
+dist/
+*.tar.g

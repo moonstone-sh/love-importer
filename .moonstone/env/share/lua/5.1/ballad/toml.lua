@@ -1,1 +1,0 @@
-/Users/extrordinaire/.local/share/moonstone/store/v0/b3/90/be/90be1a58ef8c0c97bb654877058b775fd9e6b94133cc641fe80c124a5582fe99-moonstone/ballad-0.2.3/files/libexec/ballad/src/ballad/toml.lua
