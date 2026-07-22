@@ -1,4 +1,4 @@
-.moonstone/
-.ballad/
+build/
 dist/
-*.tar.g
+.ballad/
+.moonstone/

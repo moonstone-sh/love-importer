@@ -2,6 +2,12 @@
 
 Imports local LÖVE installations into normalized Moonstone runtime artifacts.
 
+The command layer is written in MoonScript and compiled to `build/src/` during
+`moon run build`; the build also stages the Lua import core there. The exported
+artifact therefore contains only compiled runtime code and runtime dependencies,
+while filesystem, staging, manifest, and store modules remain Lua because they
+primarily model explicit artifact operations.
+
 The importer is intentionally ad-hoc about host input formats and strict about output:
 
 ```text
@@ -36,7 +42,7 @@ love-importer import ~/Downloads/love-11.5-macos.zip --version 11.5 --clear-quar
 Global install/run shape:
 
 ```bash
-moon add --global --tool moonstone:moonstone/love-importer
+moon add --global --tool moonstone/love-importer
 moon exec --global love-importer import /Applications/love.app --version 11.5
 ```
 
@@ -62,7 +68,7 @@ Use the imported runtime from a LÖVE project with:
 
 ```toml
 [dependencies.runtime]
-"moonstone:moonstone/love" = "11.5"
+"moonstone/love" = "11.5"
 
 [scripts]
 dev = "love ."
@@ -85,3 +91,12 @@ moon store import <prepared-root> --descriptor <manifest.toml>
 ```
 
 That keeps the split clear: `love-importer` knows LÖVE packaging, Moonstone core knows runtime artifacts, and Ballad knows release/export layouts.
+
+To export the importer itself, its `partiture.lua` uses the forthcoming Ballad
+contract: `moonstone:run("build", ...)`, `layout.libexec(...)`,
+`moonstone.registry.package(...)`, and explicit `p.sink.*` outputs. Run it with:
+
+```bash
+moon sync
+moon exec ballad play partiture.lua
+```
