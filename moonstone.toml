@@ -1,6 +1,6 @@
 [package]
 name = "moonstone/love-importer"
-version = "0.1.6"
+version = "0.1.7"
 kind = "bin"
 description = "Import local LÖVE installations into normalized Moonstone runtime artifacts"
 
