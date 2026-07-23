@@ -20,6 +20,7 @@ return ballad.partiture(function(p)
 		entry = "build/src/main.lua",
 		bin = "love-importer",
 		interpreter = "lua",
+		bundle_runtime = true,
 		include = { "build/src/**" },
 		lua_paths = { "lua", "build/src" },
 		packages = { "argparse" },
