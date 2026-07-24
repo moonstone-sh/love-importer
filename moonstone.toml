@@ -1,6 +1,6 @@
 [package]
 name = "moonstone/love-importer"
-version = "0.1.8"
+version = "0.1.9"
 kind = "bin"
 description = "Import local LÖVE installations into normalized Moonstone runtime artifacts"
 
@@ -33,6 +33,6 @@ role = "tool"
 
 [[dependencies]]
 name = "moonstone/ballad"
-constraint = "^0.2.31"
+constraint = "^0.2.34"
 resolver = "moonstone"
 role = "tool"
