@@ -22,17 +22,17 @@ abi = "5.1"
 [[dependencies]]
 name = "argparse"
 constraint = "^0.7.1-1"
-resolver = "rocks"
+registry = "rocks"
 role = "runtime"
 
 [[dependencies]]
 name = "moonscript"
 constraint = "^0.6.0-1"
-resolver = "rocks"
+registry = "rocks"
 role = "tool"
 
 [[dependencies]]
 name = "moonstone/ballad"
 constraint = "^0.2.36"
-resolver = "moonstone"
+registry = "moonstone"
 role = "tool"
