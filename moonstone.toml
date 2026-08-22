@@ -1,3 +1,5 @@
+manifest_version = 2
+
 [package]
 name = "moonstone/love-importer"
 version = "0.1.10"
@@ -14,10 +16,10 @@ version = "5.1"
 abi = "5.1"
 
 [scripts]
-"test" = "moon run build && bash tests/smoke.sh"
-"build" = "mkdir -p build/src/love_importer && moon exec moonc -t build src/main.moon src/love_importer/cli.moon && cp src/love_importer/*.lua build/src/love_importer/"
-"export" = "moon run build && moon exec ballad play partiture.lua"
-"love-importer" = "moon run build && moon exec lua build/src/main.lua \"$@\""
+build = "mkdir -p build/src/love_importer && moon exec moonc -t build src/main.moon src/love_importer/cli.moon && cp src/love_importer/*.lua build/src/love_importer/"
+export = "moon exec ballad play partiture.lua"
+love-importer = 'moon run build && moon exec lua build/src/main.lua "$@"'
+test = "moon run build && bash tests/smoke.sh"
 
 [[dependencies]]
 name = "argparse"
@@ -33,6 +35,5 @@ role = "tool"
 
 [[dependencies]]
 name = "moonstone/ballad"
-constraint = "^0.2.36"
-registry = "moonstone"
+constraint = "^0.3.0"
 role = "tool"

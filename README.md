@@ -8,6 +8,18 @@ artifact therefore contains only compiled runtime code and runtime dependencies,
 while filesystem, staging, manifest, and store modules remain Lua because they
 primarily model explicit artifact operations.
 
+For local development, run the project entrypoint through Moonstone and place
+importer arguments after `--`:
+
+```bash
+moon run love-importer -- inspect /Applications/love.app
+moon run love-importer -- import /Applications/love.app --version 11.5
+```
+
+The `love-importer` script explicitly forwards those arguments with `"$@"`; the
+project environment remains Moonstone-owned while the host shell interprets the
+opaque command body.
+
 The importer is intentionally ad-hoc about host input formats and strict about output:
 
 ```text
@@ -67,8 +79,12 @@ It provides `runtime love@11.5` and `bin love -> bin/love` with `lua_api = "love
 Use the imported runtime from a LÖVE project with:
 
 ```toml
-[dependencies.runtime]
-"moonstone/love" = "11.5"
+manifest_version = 2
+
+[[dependencies]]
+name = "moonstone/love"
+constraint = "11.5"
+role = "runtime"
 
 [scripts]
 dev = "love ."
@@ -92,11 +108,11 @@ moon store import <prepared-root> --descriptor <manifest.toml>
 
 That keeps the split clear: `love-importer` knows LÖVE packaging, Moonstone core knows runtime artifacts, and Ballad knows release/export layouts.
 
-To export the importer itself, its `partiture.lua` uses the forthcoming Ballad
-contract: `moonstone:run("build", ...)`, `layout.libexec(...)`,
+To export the importer itself, its `partiture.lua` uses Ballad's current
+Moonstone contract: `moonstone:run("build", ...)`, `layout.libexec(...)`,
 `moonstone.registry.package(...)`, and explicit `p.sink.*` outputs. Run it with:
 
 ```bash
 moon sync
-moon exec ballad play partiture.lua
+moon run export
 ```

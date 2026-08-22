@@ -17,7 +17,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: moonstone-sh/moonstone
-          ref: v0.3.50
+          ref: ad1ef8c03f8d6c32711dc35c9fd4aa1661cc4f07
           path: .ci/moonstone
       - uses: mlugg/setup-zig@v2
         with:
@@ -25,7 +25,7 @@ jobs:
       - name: Install release tooling
         run: |
           sudo apt-get update
-          sudo apt-get install -y b3sum
+          sudo apt-get install -y b3sum file jq luajit zstd
       - name: Build Moonstone CLI
         working-directory: .ci/moonstone
         run: |
