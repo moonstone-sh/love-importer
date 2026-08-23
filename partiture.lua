@@ -34,6 +34,9 @@ return ballad.partiture(function(p)
 		runtime = project.runtime or "lua@5.1",
 		lua_abi = project.lua_abi or "5.1",
 		description = project.description,
+		dependencies = {
+			{ name = "argparse", constraint = "^0.7.1-1", resolver = "rocks", role = "runtime" },
+		},
 	})
 
 	p.sink.none(build)
