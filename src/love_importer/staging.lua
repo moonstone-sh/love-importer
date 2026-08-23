@@ -58,6 +58,7 @@ function M.validate_runtime_root(files_dir, opts)
   M.validate_no_external_symlink(love, files_dir, "files/bin/love")
   if not opts.version or opts.version == "" then error("version is required") end
   if not opts.target or opts.target == "" then error("target is required") end
+  opts.target = util.normalize_target(opts.target)
   if not util.is_known_target(opts.target) then error("unknown target: " .. opts.target) end
 end
 

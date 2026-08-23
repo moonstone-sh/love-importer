@@ -90,25 +90,37 @@ function M.host_target()
   local sys = M.capture("uname -s")
   local machine = M.capture("uname -m")
   local arch = ({ arm64 = "aarch64", aarch64 = "aarch64", x86_64 = "x86_64", amd64 = "x86_64" })[machine] or machine
-  if sys == "Darwin" then return "darwin-" .. arch end
-  if sys == "FreeBSD" then return "freebsd-" .. arch end
+  if sys == "Darwin" then return arch .. "-macos" end
+  if sys == "FreeBSD" then return arch .. "-freebsd" end
   if sys == "Linux" then
     local libc = M.capture("getconf GNU_LIBC_VERSION")
     local flavor = libc ~= "" and "gnu" or "musl"
-    return "linux-" .. arch .. "-" .. flavor
+    return arch .. "-linux-" .. flavor
   end
-  return sys:lower() .. "-" .. arch
+  return arch .. "-" .. sys:lower()
+end
+
+function M.normalize_target(target)
+  if not target then return nil end
+  if target == "darwin-aarch64" then return "aarch64-macos" end
+  if target == "darwin-x86_64" then return "x86_64-macos" end
+  if target == "linux-x86_64-gnu" then return "x86_64-linux-gnu" end
+  if target == "linux-aarch64-gnu" then return "aarch64-linux-gnu" end
+  if target == "linux-x86_64-musl" then return "x86_64-linux-musl" end
+  if target == "linux-aarch64-musl" then return "aarch64-linux-musl" end
+  return target
 end
 
 function M.is_known_target(target)
-  return target:match("^darwin%-aarch64$")
-    or target:match("^darwin%-x86_64$")
-    or target:match("^linux%-x86_64%-gnu$")
-    or target:match("^linux%-aarch64%-gnu$")
-    or target:match("^linux%-x86_64%-musl$")
-    or target:match("^linux%-aarch64%-musl$")
-    or target:match("^freebsd%-x86_64$")
-    or target:match("^freebsd%-aarch64$")
+  local norm = M.normalize_target(target)
+  return norm == "aarch64-macos"
+    or norm == "x86_64-macos"
+    or norm == "x86_64-linux-gnu"
+    or norm == "aarch64-linux-gnu"
+    or norm == "x86_64-linux-musl"
+    or norm == "aarch64-linux-musl"
+    or norm == "x86_64-freebsd"
+    or norm == "aarch64-freebsd"
 end
 
 function M.moonstone_home()
