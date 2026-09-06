@@ -22,9 +22,8 @@ love-importer = 'moon run build && moon exec lua build/src/main.lua "$@"'
 test = "moon run build && bash tests/smoke.sh"
 
 [[dependencies]]
-name = "argparse"
-constraint = "^0.7.1-1"
-registry = "rocks"
+name = "moonstone/clingy"
+constraint = "^0.1.0"
 role = "runtime"
 
 [[dependencies]]
@@ -37,3 +36,4 @@ role = "tool"
 name = "moonstone/ballad"
 constraint = "^0.3.0"
 role = "tool"
+
