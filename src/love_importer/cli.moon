@@ -29,7 +29,7 @@ print_imported = (imported, opts) ->
   print ""
   print "provides:"
   print "  runtime love@" .. opts.version
-  print "  bin love -> bin/love"
+  print "  bin love -> " .. (if opts.target\match "windows$" then "bin/love.exe" else "bin/love")
 
 build_app = ->
   local app
@@ -38,9 +38,9 @@ build_app = ->
     version: "0.1.14"
     description: "Import local LÖVE installations into Moonstone runtime artifacts."
 
-    c.root c.node {
+    root: c.node {
       c.inherit(
-        c.flag "-h", "--help"
+        c.flag { key: "help", aliases: {"-h", "--help"} }
       )
 
       c.run (ctx) ->
@@ -48,7 +48,7 @@ build_app = ->
         0
 
       inspect: c.node {
-        c.arg "input", v.string!
+        c.arg { key: "input", schema: v.string! }
 
         c.run (ctx) ->
           if ctx.args.help
@@ -62,13 +62,13 @@ build_app = ->
       }
 
       import: c.node {
-        c.arg "input", v.string!
-        c.option "--version", v.string!
-        c.option "--target", v.string!
-        c.option "--out", v.string!
-        c.option "--app-name", v.string!
-        c.flag "--skip-run-check"
-        c.flag "--clear-quarantine"
+        c.arg { key: "input", schema: v.string! }
+        c.option { key: "version", aliases: {"--version"}, value: {schema: v.string!} }
+        c.option { key: "target", aliases: {"--target"}, value: {schema: v.string!} }
+        c.option { key: "out", aliases: {"--out"}, value: {schema: v.string!} }
+        c.option { key: "app_name", aliases: {"--app-name"}, value: {schema: v.string!} }
+        c.flag { key: "skip_run_check", aliases: {"--skip-run-check"} }
+        c.flag { key: "clear_quarantine", aliases: {"--clear-quarantine"} }
 
         c.run (ctx) ->
           if ctx.args.help
@@ -87,14 +87,14 @@ build_app = ->
       }
 
       "import-system": c.node {
-        c.arg "input", v.string!
-        c.option "--version", v.string!
-        c.option "--target", v.string!
-        c.option "--out", v.string!
-        c.option "--app-name", v.string!
-        c.flag "--skip-run-check"
-        c.flag "--clear-quarantine"
-        c.flag "--local-only"
+        c.arg { key: "input", schema: v.string! }
+        c.option { key: "version", aliases: {"--version"}, value: {schema: v.string!} }
+        c.option { key: "target", aliases: {"--target"}, value: {schema: v.string!} }
+        c.option { key: "out", aliases: {"--out"}, value: {schema: v.string!} }
+        c.option { key: "app_name", aliases: {"--app-name"}, value: {schema: v.string!} }
+        c.flag { key: "skip_run_check", aliases: {"--skip-run-check"} }
+        c.flag { key: "clear_quarantine", aliases: {"--clear-quarantine"} }
+        c.flag { key: "local_only", aliases: {"--local-only"} }
 
         c.run (ctx) ->
           if ctx.args.help

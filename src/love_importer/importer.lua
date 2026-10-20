@@ -18,11 +18,12 @@ end
 
 local function run_check(files_dir, opts, info)
   if opts.skip_run_check then return nil end
-  if opts.target and opts.target:match("^darwin%-") and info and info.layout == "macos-app" then
+  if opts.target and opts.target:match("macos$") and info and info.layout == "macos-app" then
     warn("skipping macOS .app run check to avoid triggering Gatekeeper during import; pass --skip-run-check to silence this warning")
     return nil
   end
-  local love = files_dir .. "/bin/love"
+  if opts.target ~= util.host_target() then return nil end
+  local love = files_dir .. "/" .. (info.bin_path or "bin/love")
   local output = util.capture(util.quote(love) .. " --version")
   if output == "" then
     warn("could not verify `files/bin/love --version`; pass --skip-run-check to silence this warning")
@@ -42,12 +43,24 @@ local function prepare_out_dir(out_dir)
 end
 
 local function package_files(out_dir, files_dir, opts, info)
-  local artifact = util.abspath(out_dir .. "/love-" .. opts.version .. "-" .. opts.target .. ".tar.zst")
+  opts.target = util.normalize_target(opts.target)
+  info.format = util.windows and "tar.gz" or "tar.zst"
+  local artifact = util.abspath(out_dir .. "/love-" .. opts.version .. "-" .. opts.target .. "." .. info.format)
   validate_staged_root(files_dir, opts, info)
-  assert(util.command_ok("command -v zstd >/dev/null"), "zstd is required")
-  assert(util.command_ok("cd " .. util.quote(files_dir) .. " && tar -cf - . | zstd -q -c > " .. util.quote(artifact)), "failed to create artifact archive")
+  if util.windows then
+    local entries = out_dir .. "/entries.json"
+    util.entries(files_dir, entries)
+    local output = util.capture("moon artifact create --json --out " .. util.quote(artifact) .. " --entries-file " .. util.quote(util.abspath(entries)))
+    local result = require("dkjson").decode(output)
+    assert(result and result.contract == "moonstone:artifact-create:v1", "Moonstone artifact creation failed: " .. output)
+    os.remove(entries)
+  else
+    assert(util.command_ok("command -v zstd >/dev/null"), "zstd is required")
+    assert(util.command_ok("cd " .. util.quote(files_dir) .. " && tar -cf - . | zstd -q -c > " .. util.quote(artifact)), "failed to create artifact archive")
+  end
   local artifact_hash = util.b3_file(artifact)
-  local store_path = store.import_root(files_dir, opts, info, artifact_hash)
+  manifest.write_package_descriptor(out_dir, opts, info, artifact_hash, artifact)
+  local store_path = store.import_root(files_dir, opts, info, artifact_hash, artifact)
   opts.store_path = store_path
   manifest.write_import_metadata(out_dir, opts, info, artifact_hash, artifact_hash, artifact)
   manifest.write_package_descriptor(out_dir, opts, info, artifact_hash, artifact)
@@ -81,12 +94,20 @@ function M.import_path(input_path, opts)
     return fail("Could not find LÖVE executable.\n\nExpected one of:\n  <root>/bin/love\n  <app>/Contents/MacOS/love\n\nInput:\n  " .. input_path)
   end
 
+  assert(opts.version and opts.version:match("^[%w_.%-]+$"), "invalid runtime version")
+  opts.target = util.normalize_target(opts.target)
+  assert(util.is_known_target(opts.target), "unknown target: " .. tostring(opts.target))
+  util.safe_output(input_path, opts.out)
   prepare_out_dir(opts.out)
   local files_dir = opts.out .. "/files"
   util.mkdir(files_dir)
 
   local info
-  if inspected.kind == "macos_app" then
+  if inspected.kind == "windows_root" then
+    info = assert(normalize.windows_root(inspected, files_dir))
+  elseif inspected.kind == "windows_zip" then
+    info = assert(normalize.windows_zip(inspected, files_dir))
+  elseif inspected.kind == "macos_app" then
     info = assert(normalize.macos_app(inspected, files_dir))
   elseif inspected.kind == "macos_zip" then
     info = assert(normalize.macos_zip(inspected, files_dir, opts))
@@ -101,8 +122,8 @@ function M.import_path(input_path, opts)
     info.publish_allowed = false
   end
   if opts.clear_quarantine then
-    if not staging.clear_quarantine(files_dir) then warn("could not clear macOS quarantine attributes") end
-    info.quarantine_cleared = true
+    info.quarantine_cleared = staging.clear_quarantine(files_dir)
+    if not info.quarantine_cleared then warn("could not clear macOS quarantine attributes") end
   end
 
   local artifact, artifact_hash, store_path = package_files(opts.out, files_dir, opts, info)
@@ -119,6 +140,10 @@ function M.import_system(input_path, opts)
     return fail("system executable does not exist or is not executable: " .. input_path)
   end
 
+  assert(opts.version and opts.version:match("^[%w_.%-]+$"), "invalid runtime version")
+  opts.target = util.normalize_target(opts.target)
+  assert(util.is_known_target(opts.target), "unknown target: " .. tostring(opts.target))
+  util.safe_output(input_path, opts.out)
   prepare_out_dir(opts.out)
   local files_dir = opts.out .. "/files"
   util.mkdir(files_dir)

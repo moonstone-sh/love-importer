@@ -1,3 +1,4 @@
+package.path = "src/?.lua;src/?/init.lua;" .. package.path
 local ballad = require("ballad")
 
 return ballad.partiture(function(p)
@@ -8,6 +9,7 @@ return ballad.partiture(function(p)
 
 	local build = moonstone:run("build", {
 		inputs = {
+			"scripts/build.lua",
 			"src/main.moon",
 			"src/love_importer/*.moon",
 			"src/love_importer/*.lua",
@@ -23,19 +25,20 @@ return ballad.partiture(function(p)
 		bundle_runtime = true,
 		include = { "build/src/**" },
 		lua_paths = { "lua", "build/src" },
-		packages = { "argparse" },
+		packages = { "moonstone/clingy", "moonstone/valua", "moonstone/alter", "moonstone/alter-jsonc", "moonstone/alter-json", "moonstone/luals-composer", "dkjson" },
 		depends_on = build,
 	})
 
 	local artifact = moonstone.registry.package(app, {
 		name = project.registry_name or "moonstone/love-importer",
 		version = project.version,
-		target = "any",
-		runtime = project.runtime or "lua@5.1",
-		lua_abi = project.lua_abi or "5.1",
+		target = require("love_importer.util").host_target(),
+		runtime = project.runtime or "lua@5.4",
+		lua_abi = project.lua_abi or "5.4",
 		description = project.description,
 		dependencies = {
-			{ name = "argparse", constraint = "^0.7.1-1", resolver = "rocks", role = "runtime" },
+			{ name = "moonstone/clingy", constraint = "^0.8.0", role = "runtime" },
+            { name = "dkjson", constraint = "^2.9-1", resolver = "rocks", role = "runtime" },
 		},
 	})
 

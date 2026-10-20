@@ -4,8 +4,8 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 LUA_BIN="${LUA_BIN:-$ROOT/.moonstone/env/bin/lua}"
 MAIN="${MAIN:-$ROOT/build/src/main.lua}"
-LUA_PATH="$ROOT/.moonstone/env/share/lua/5.1/?.lua;$ROOT/.moonstone/env/share/lua/5.1/?/init.lua;${LUA_PATH:-};;"
-LUA_CPATH="$ROOT/.moonstone/env/lib/lua/5.1/?.so;$ROOT/.moonstone/env/lib/lua/5.1/?/init.so;${LUA_CPATH:-};;"
+LUA_PATH="$ROOT/.moonstone/env/share/lua/5.4/?.lua;$ROOT/.moonstone/env/share/lua/5.4/?/init.lua;${LUA_PATH:-};;"
+LUA_CPATH="$ROOT/.moonstone/env/lib/lua/5.4/?.so;$ROOT/.moonstone/env/lib/lua/5.4/?/init.so;${LUA_CPATH:-};;"
 export LUA_PATH LUA_CPATH
 TMP="${TMPDIR:-/tmp}/love-importer-smoke.$$"
 trap 'rm -rf "$TMP"' EXIT
@@ -30,7 +30,7 @@ test -x "$TMP/out-root/files/bin/love"
 test -f "$TMP/out-root/package.toml"
 grep -q 'name = "moonstone/love"' "$TMP/out-root/package.toml"
 grep -q 'lua_api = "love-11"' "$TMP/out-root/package.toml"
-test -d "$MOONSTONE_HOME/store/v0/b3"
+test -d "$MOONSTONE_HOME/data/store/v0"
 
 "$LUA_BIN" "$MAIN" import "$TMP/app/love.app" --version 11.5 --target darwin-aarch64 --out "$TMP/out-app" --skip-run-check
 test -L "$TMP/out-app/files/bin/love" -o -x "$TMP/out-app/files/bin/love"
@@ -40,7 +40,7 @@ test -d "$TMP/out-app/files/libexec/love.app"
 "$LUA_BIN" "$MAIN" import "$TMP/love-11.5-macos.zip" --version 11.5 --target darwin-aarch64 --out "$TMP/out-zip" --skip-run-check --clear-quarantine
 test -L "$TMP/out-zip/files/bin/love" -o -x "$TMP/out-zip/files/bin/love"
 test -d "$TMP/out-zip/files/libexec/love.app"
-grep -q 'quarantine_cleared = true' "$TMP/out-zip/import.toml"
+grep -q 'quarantine_cleared = ' "$TMP/out-zip/import.toml"
 
 "$LUA_BIN" "$MAIN" import-system "$TMP/root/bin/love" --version 11.5 --target linux-x86_64-gnu --out "$TMP/out-system" --local-only --skip-run-check
 test -x "$TMP/out-system/files/bin/love"

@@ -28,7 +28,8 @@ function M.write_import_metadata(out_dir, opts, info, artifact_hash, blob_hash, 
 end
 
 function M.write_package_descriptor(out_dir, opts, info, artifact_hash, artifact_path)
-  local bytes = tonumber(util.capture("wc -c < " .. util.quote(artifact_path))) or 0
+  local file = assert(io.open(artifact_path, "rb"))
+  local bytes = assert(file:seek("end")); file:close()
   local recipe_hash = util.b3_string("recipe-love-" .. opts.version .. "-" .. opts.target .. "-" .. (info.layout or "unknown"))
   local lines = {
     "[package]",
@@ -44,8 +45,8 @@ function M.write_package_descriptor(out_dir, opts, info, artifact_hash, artifact
     "runtime = " .. util.toml_string("love@" .. opts.version),
     "lua_api = \"" .. M.lua_api .. "\"",
     "lua_abi = \"" .. M.lua_abi .. "\"",
-    "format = \"tar.zst\"",
-    "url = " .. util.toml_string("file://" .. util.abspath(artifact_path)),
+    "format = " .. util.toml_string(info.format or "tar.zst"),
+    "url = " .. util.toml_string(util.file_uri(artifact_path)),
     "hash = " .. util.toml_string(artifact_hash),
     "artifact_hash = " .. util.toml_string(artifact_hash),
     "bytes = " .. tostring(bytes),
@@ -66,7 +67,7 @@ function M.write_package_descriptor(out_dir, opts, info, artifact_hash, artifact
     "[[artifacts.provides]]",
     "kind = \"bin\"",
     "name = \"love\"",
-    "path = \"bin/love\"",
+    "path = " .. util.toml_string(info.bin_path or "bin/love"),
     "",
   }
   util.write_file(out_dir .. "/package.toml", table.concat(lines, "\n"))
@@ -106,7 +107,7 @@ function M.write_store_manifest(store_path, opts, info, artifact_hash)
     "",
     "[[provides.bin]]",
     "name = \"love\"",
-    "path = \"bin/love\"",
+    "path = " .. util.toml_string(info.bin_path or "bin/love"),
     "",
   }, "\n")
   util.write_file(store_path .. "/manifest.toml", content)
