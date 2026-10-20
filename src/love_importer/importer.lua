@@ -94,7 +94,7 @@ function M.import_path(input_path, opts)
     return fail("Could not find LÖVE executable.\n\nExpected one of:\n  <root>/bin/love\n  <app>/Contents/MacOS/love\n\nInput:\n  " .. input_path)
   end
 
-  assert(opts.version and opts.version:match("^[%w_.%-]+$"), "invalid runtime version")
+  assert(opts.version and opts.version:match("^%d[%w_.%-]*$") and not opts.version:find("..", 1, true), "invalid runtime version")
   opts.target = util.normalize_target(opts.target)
   assert(util.is_known_target(opts.target), "unknown target: " .. tostring(opts.target))
   util.safe_output(input_path, opts.out)
@@ -140,7 +140,7 @@ function M.import_system(input_path, opts)
     return fail("system executable does not exist or is not executable: " .. input_path)
   end
 
-  assert(opts.version and opts.version:match("^[%w_.%-]+$"), "invalid runtime version")
+  assert(opts.version and opts.version:match("^%d[%w_.%-]*$") and not opts.version:find("..", 1, true), "invalid runtime version")
   opts.target = util.normalize_target(opts.target)
   assert(util.is_known_target(opts.target), "unknown target: " .. tostring(opts.target))
   util.safe_output(input_path, opts.out)

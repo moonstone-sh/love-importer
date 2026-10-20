@@ -25,7 +25,7 @@ function M.import_root(_, opts, _, _, artifact)
     '[capabilities]', 'runtimes = true', 'artifacts = true', '',
   }, '\n'))
   local output = util.capture(util.moon_command() .. ' add --global --runtime '.. util.quote('moonstone/love@'..opts.version)
-    ..' --target '..util.quote(opts.target)..' --registry '..util.quote(util.file_uri(root))..' --json')
+    ..' --target '..util.quote(opts.target)..' --registry '..util.quote(util.abspath(root))..' --json')
   local json = require('dkjson')
   for line in output:gmatch('[^\r\n]+') do
     local event = json.decode(line)

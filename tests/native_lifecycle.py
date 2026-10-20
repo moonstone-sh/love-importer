@@ -56,7 +56,12 @@ else:
         assert not (root/'escaped.txt').exists()
         run('exec','--','lua','build/src/main.lua','import',str(original),'--version','11.5','--out',str(original),'--skip-run-check',env=env,failure=True)
         assert (original/'love.exe').read_bytes() == expected['love.exe']
-run('exec','--','ballad','play','partiture.lua')
+if os.environ.get('BALLAD_SOURCE'):
+    source = Path(os.environ['BALLAD_SOURCE']).resolve().as_posix()
+    code = 'package.path=[['+source+'/src/?.lua;'+source+'/src/?/init.lua;]]..package.path;arg={"play","partiture.lua"};dofile([['+source+'/src/main.lua]])'
+    run('exec','--','lua','-e',code)
+else:
+    run('exec','--','ballad','play','partiture.lua')
 with tempfile.TemporaryDirectory(prefix='love relocated ') as temporary:
     relocated = Path(temporary)/'app'
     shutil.copytree(repo/'dist/love-importer', relocated, symlinks=True)
