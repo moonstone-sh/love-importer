@@ -22,7 +22,10 @@ for descriptor in sorted(args.root.rglob('package.toml')):
     target = artifact['target']
     assert target != 'any' and target not in targets, target
     targets.add(target)
-    name = artifact['url'].rsplit('/', 1)[-1]
+    archives = list(descriptor.parent.glob('*.tar.gz'))
+    assert len(archives) == 1, descriptor
+    name = archives[0].name
+    assert archives[0].stat().st_size == artifact['bytes'], 'archive size disagrees with descriptor'
     assert name not in names and '/' not in name and name.endswith('.tar.gz'), name
     names.add(name)
     assert (descriptor.parent/name).is_file(), name
