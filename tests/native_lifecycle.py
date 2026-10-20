@@ -49,6 +49,11 @@ else:
             with tarfile.open(next(output.glob('*.tar.gz'))) as bundle:
                 assert 'bin/love.exe' in bundle.getnames()
             assert (output/'registry/registry.toml').is_file()
+        system_output = root/'system-only'
+        run('exec','--','lua','build/src/main.lua','import-system',str(original/'love.exe'),'--version','11.5','--target','x86_64-windows','--out',str(system_output),'--local-only','--skip-run-check',env=env)
+        assert (system_output/'files/bin/love.exe').read_bytes() == expected['love.exe']
+        assert 'local_only = true' in (system_output/'import.toml').read_text()
+        assert not list((system_output/'files/bin').glob('*.dll'))
         unsafe = root/'unsafe.zip'
         with zipfile.ZipFile(unsafe,'w') as bundle:
             bundle.writestr('../escaped.txt','bad')

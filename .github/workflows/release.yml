@@ -29,7 +29,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: moonstone-sh/moonstone
-          ref: 69d2859c80a8b3221e9368d6414ba11fdef486de
+          ref: 00a58625bcb9622dca71449789faffb393e0239d
           path: .ci/moonstone
       - uses: actions/checkout@v4
         with:

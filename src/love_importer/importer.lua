@@ -38,6 +38,7 @@ local function validate_staged_root(files_dir, opts, info)
 end
 
 local function prepare_out_dir(out_dir)
+  if util.windows and util.is_dir(out_dir) then util.validate_tree(out_dir) end
   util.rm_rf(out_dir)
   util.mkdir(out_dir)
 end
