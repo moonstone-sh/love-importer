@@ -1,4 +1,4 @@
-source = debug.getinfo(1, "S").source
+source = debug.getinfo(1, "S").source\gsub "\\", "/"
 script_path = if source\sub(1, 1) == "@" then source\sub(2) else "build/src/main.lua"
 root = script_path\gsub "build/src/main%.lua$", ""
 root = "." if root == ""

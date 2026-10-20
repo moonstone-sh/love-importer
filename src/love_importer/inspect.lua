@@ -30,12 +30,20 @@ local function macos_app(path)
 end
 
 function M.path(path, opts)
+  path = path:gsub("\\", "/")
   opts = opts or {}
   if path:match("%.AppImage$") then
     return result("appimage_rejected", path, {
       note = "AppImage is rejected for canonical imports",
       supported = false,
     })
+  end
+  if util.windows and path:lower():match("%.zip$") then return result("windows_zip", path, {supported=true}) end
+  if util.windows and util.is_dir(path) then
+    local direct = path .. "/love.exe"
+    local nested = path .. "/bin/love.exe"
+    local executable = util.is_file(direct) and direct or nested
+    return result("windows_root", path, {executable=executable, supported=util.is_file(executable), executable_ok=util.is_file(executable)})
   end
   if path:match("%.zip$") then
     return result("macos_zip", path, {

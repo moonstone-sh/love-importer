@@ -77,15 +77,41 @@ end
 
 function M.system_binary(input, files_dir, opts)
   if not opts.local_only then return fail("import-system requires --local-only") end
-  staging.copy_file(input.executable, files_dir .. "/bin/love")
-  assert(util.command_ok("chmod +x " .. util.quote(files_dir .. "/bin/love")), "failed to chmod executable")
+  local bin_path = util.windows and "bin/love.exe" or "bin/love"
+  staging.copy_file(input.executable, files_dir .. "/" .. bin_path)
+  if not util.windows then assert(util.command_ok("chmod +x " .. util.quote(files_dir .. "/bin/love")), "failed to chmod executable") end
   return {
     layout = "system-executable",
     source = "system-executable",
     local_only = true,
     publish_allowed = false,
-    bin_path = "bin/love",
+    bin_path = bin_path,
   }
+end
+
+function M.windows_root(input, files_dir)
+  util.validate_tree(input.path)
+  local flat = util.is_file(input.path .. "/love.exe")
+  staging.copy_tree(input.path, flat and (files_dir .. "/bin") or files_dir)
+  return {layout="windows-root", source="windows-root", bin_path="bin/love.exe", local_only=false, publish_allowed=false}
+end
+
+function M.windows_zip(input, files_dir)
+  local tmp = staging.create_temp()
+  -- ExtractToDirectory requires a fresh destination.
+  util.rm_rf(tmp)
+  local ok, info = pcall(function()
+    util.extract_zip(input.path, tmp)
+    local roots = util.find_love(tmp)
+    assert(#roots == 1, "Windows ZIP must contain exactly one love.exe")
+    local inspected = inspect.path(roots[1])
+    local result = M.windows_root(inspected, files_dir)
+    result.source = "windows-zip"
+    return result
+  end)
+  util.rm_rf(tmp)
+  if not ok then return fail(tostring(info)) end
+  return info
 end
 
 return M

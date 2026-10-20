@@ -1,21 +1,78 @@
 name: Publish Love Importer
-
 on:
   push:
     tags: ['v*']
   workflow_dispatch:
     inputs:
       release_tag:
-        description: Existing v* tag to publish after a publish-only failure.
+        description: Existing v* tag to publish after a failed release.
         required: true
         type: string
-
 permissions:
   contents: read
-
 jobs:
+  build:
+    name: Build and verify (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || github.ref }}
+      - uses: actions/checkout@v4
+        with:
+          repository: moonstone-sh/moonstone
+          ref: 057a0cda49bec32c32d1567df1768119e2a85b2b
+          path: .ci/moonstone
+      - uses: actions/checkout@v4
+        with:
+          repository: moonstone-sh/ballad
+          ref: e4fa9336e40ed5294aecfb043ded364587c8c6a5
+          path: .ci/ballad
+      - uses: mlugg/setup-zig@v2
+        with:
+          version: 0.16.0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install POSIX archive tooling
+        if: runner.os != 'Windows'
+        run: |
+          if [ "$RUNNER_OS" = Linux ]; then
+            sudo apt-get update
+            sudo apt-get install -y b3sum zstd zip unzip
+          else
+            brew install b3sum zstd
+          fi
+      - name: Build Moonstone
+        working-directory: .ci/moonstone
+        run: |
+          zig build
+          echo "$GITHUB_WORKSPACE/.ci/moonstone/zig-out/bin" >> "$GITHUB_PATH"
+      - name: Verify tag and build native release closure
+        env:
+          RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || github.ref_name }}
+        run: |
+          test "${RELEASE_TAG#v}" = "$(sed -n 's/^version = "\(.*\)"$/\1/p' moonstone.toml | head -1)"
+          moon remove moonstone/ballad --no-sync
+          moon add "path:$GITHUB_WORKSPACE/.ci/ballad" --tool --no-sync
+          moon sync --update
+          python tests/native_lifecycle.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: love-importer-${{ matrix.os }}
+          path: dist/love-importer/registry-artifact/
+          if-no-files-found: error
   publish:
-    name: Publish Love Importer registry artifact
+    name: Publish verified native artifacts
+    needs: build
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -25,51 +82,25 @@ jobs:
           ref: ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || github.ref }}
       - uses: actions/checkout@v4
         with:
-          repository: moonstone-sh/moonstone
-          ref: ad1ef8c03f8d6c32711dc35c9fd4aa1661cc4f07
-          path: .ci/moonstone
-      - uses: actions/checkout@v4
-        with:
           repository: moonstone-sh/ballad
+          ref: e4fa9336e40ed5294aecfb043ded364587c8c6a5
           path: .ci/ballad
-          fetch-depth: 0
-      - uses: mlugg/setup-zig@v2
+      - uses: actions/download-artifact@v4
         with:
-          version: 0.16.0
-      - name: Install release tooling
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y b3sum file jq luajit zstd
-      - name: Build Moonstone CLI
-        working-directory: .ci/moonstone
-        run: |
-          zig build
-          echo "$GITHUB_WORKSPACE/.ci/moonstone/zig-out/bin" >> "$GITHUB_PATH"
-      - name: Synchronize and export tagged project
-        run: |
-          moon sync
-          moon run export
-      - name: Verify tag version
-        env:
-          RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || github.ref_name }}
-        run: test "${RELEASE_TAG#v}" = "$(sed -n 's/^version = "\(.*\)"$/\1/p' moonstone.toml | head -1)"
-      - name: Upload immutable GitHub release artifact
+          pattern: love-importer-*
+          path: release-artifacts
+      - name: Assemble one descriptor and upload immutable release assets
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || github.ref_name }}
         run: |
-          set -eu
-          asset="$(find dist/love-importer/registry-artifact -maxdepth 1 -type f -name '*.tar.gz' -print -quit)"
-          test -n "$asset"
+          python3 scripts/merge_release.py release-artifacts --version "${RELEASE_TAG#v}" --release-url "https://github.com/$GITHUB_REPOSITORY/releases/download/$RELEASE_TAG"
           gh release view "$RELEASE_TAG" >/dev/null 2>&1 || gh release create "$RELEASE_TAG" --title "Love Importer $RELEASE_TAG" --generate-notes
-          gh release upload "$RELEASE_TAG" "$asset"
-          echo "MOONSTONE_ARTIFACT_URL=https://github.com/${GITHUB_REPOSITORY}/releases/download/${RELEASE_TAG}/$(basename "$asset")" >> "$GITHUB_ENV"
-      - name: Publish registry artifact
+          while IFS= read -r asset; do gh release upload "$RELEASE_TAG" "$asset"; done < <(find release-artifacts -name '*.tar.gz' -type f)
+      - name: Publish the combined registry descriptor
         env:
           MOONSTONE_TOKEN: ${{ secrets.MOONSTONE_TOKEN }}
-          MOONSTONE_ARTIFACT_URL: ${{ env.MOONSTONE_ARTIFACT_URL }}
         run: |
           test -n "$MOONSTONE_TOKEN"
-          dist/love-importer/registry-artifact/publish.sh
-      - name: Verify published package is resolvable
-        run: .ci/ballad/scripts/wait-for-publication.sh dist/love-importer/registry-artifact/package.toml
+          curl --fail-with-body -H "Authorization: Bearer $MOONSTONE_TOKEN" -F descriptor=@release-artifacts/combined.toml -F readme=@REGISTRY_README.md https://registry.moonstone.sh/api/registry/v0/publish
+          .ci/ballad/scripts/wait-for-publication.sh release-artifacts/combined.toml

@@ -52,10 +52,12 @@ function M.cp_a(src, dest)
 end
 
 function M.basename(path)
+  path = path:gsub("\\", "/")
   return path:match("([^/]+)/*$") or path
 end
 
 function M.dirname(path)
+  path = path:gsub("\\", "/")
   return path:match("^(.*)/[^/]+/*$") or "."
 end
 
@@ -63,6 +65,23 @@ function M.abspath(path)
   if path:sub(1, 1) == "/" then return path end
   local cwd = M.capture("pwd -P")
   return cwd .. "/" .. path
+end
+
+function M.safe_output(input, output)
+  local function canonical(p)
+    p = M.abspath(p):gsub("\\", "/")
+    local parts = {}
+    for part in p:gmatch('[^/]+') do
+      if part == '..' then table.remove(parts) elseif part ~= '.' then parts[#parts+1] = part end
+    end
+    p = (p:sub(1,1)=='/' and '/' or '') .. table.concat(parts,'/')
+    return M.windows and p:lower() or p
+  end
+  local source, dest, cwd = canonical(input), canonical(output), canonical('.')
+  local function under(a,b) return a==b or a:sub(1,#b+1)==b..'/' end
+  assert(dest~='' and dest~='/' and not dest:match('^%a:$') and not dest:match('^//[^/]+/[^/]+$'), 'unsafe output directory')
+  assert(not under(cwd,dest), 'output must not replace the current directory or its parents')
+  assert(not under(source,dest) and not under(dest,source), 'input and output directories must not overlap')
 end
 
 function M.toml_string(value)
@@ -121,16 +140,27 @@ function M.is_known_target(target)
     or norm == "aarch64-linux-musl"
     or norm == "x86_64-freebsd"
     or norm == "aarch64-freebsd"
+    or norm == "x86_64-windows"
+    or norm == "aarch64-windows"
 end
 
 function M.moonstone_home()
   return os.getenv("MOONSTONE_HOME") or ((os.getenv("HOME") or ".") .. "/.local/share/moonstone")
 end
 
+function M.moon_command()
+  return M.quote(os.getenv("MOONSTONE_CLI") or os.getenv("MOONSTONE_BIN") or "moon")
+end
+
 function M.b3_file(path)
-  local b3sum = M.capture("command -v b3sum")
-  if b3sum == "" then error("b3sum is required") end
-  return "b3:" .. M.capture(M.quote(b3sum) .. " --no-names " .. M.quote(path))
+  local hash = M.capture(M.moon_command() .. ' artifact hash -- ' .. M.quote(M.abspath(path)))
+  assert(#hash == 64 and hash:match('^[0-9a-f]+$'), 'Moonstone BLAKE3 hashing failed: ' .. path)
+  return 'b3:' .. hash
+end
+
+function M.file_uri(path)
+  path = M.abspath(path):gsub("\\", "/")
+  return "file://" .. (path:sub(1,1)=="/" and "" or "/") .. path:gsub('[^%w%-%._~/:]', function(c) return string.format('%%%02X', c:byte()) end)
 end
 
 function M.b3_string(value)
@@ -141,4 +171,5 @@ function M.b3_string(value)
   return hash
 end
 
+for key, value in pairs(require("love_importer.host")) do M[key] = value end
 return M

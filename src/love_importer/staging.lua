@@ -3,12 +3,14 @@ local util = require("love_importer.util")
 local M = {}
 
 function M.create_temp()
+  if util.create_temp then return util.create_temp() end
   local tmp = util.capture("mktemp -d")
   if tmp == "" then error("mktemp failed") end
   return tmp
 end
 
 function M.copy_tree(source, dest)
+  if util.copy_tree then return util.copy_tree(source, dest) end
   local source_abs = util.abspath(source)
   local dest_abs = util.abspath(dest)
   util.mkdir(dest_abs)
@@ -16,6 +18,7 @@ function M.copy_tree(source, dest)
 end
 
 function M.copy_file(source, dest)
+  if util.copy_file then return util.copy_file(source, dest) end
   local source_abs = util.abspath(source)
   local dest_abs = util.abspath(dest)
   util.mkdir(util.dirname(dest_abs))
@@ -28,6 +31,7 @@ function M.symlink(target, link_path)
 end
 
 function M.clear_quarantine(path)
+  if util.windows then return false end
   local xattr = util.capture("command -v xattr")
   if xattr == "" then return false end
   return util.command_ok(util.quote(xattr) .. " -dr com.apple.quarantine " .. util.quote(path))
@@ -40,7 +44,7 @@ function M.is_internal_symlink(path, root)
   local target_dir = util.dirname(target)
   local normalized = util.capture("cd " .. util.quote(util.dirname(path)) .. " && cd " .. util.quote(target_dir) .. " && pwd -P")
   local abs_root = util.capture("cd " .. util.quote(root) .. " && pwd -P")
-  return normalized:sub(1, #abs_root) == abs_root, target
+  return normalized == abs_root or normalized:sub(1, #abs_root + 1) == abs_root .. "/", target
 end
 
 function M.validate_no_external_symlink(path, root, display_path)
@@ -51,7 +55,13 @@ function M.validate_no_external_symlink(path, root, display_path)
 end
 
 function M.validate_runtime_root(files_dir, opts)
-  local love = files_dir .. "/bin/love"
+  local love = files_dir .. (opts.target:match("windows$") and "/bin/love.exe" or "/bin/love")
+  if util.windows then
+    util.validate_tree(files_dir)
+    assert(util.is_file(love), "staged runtime missing bin/love.exe")
+    assert(util.is_known_target(opts.target), "unknown target: " .. tostring(opts.target))
+    return
+  end
   local is_symlink = util.capture("test -L " .. util.quote(love) .. " && echo yes") == "yes"
   if not util.is_file(love) and not is_symlink then error("staged artifact missing files/bin/love") end
   if not util.is_executable(love) then error("staged files/bin/love is not executable") end

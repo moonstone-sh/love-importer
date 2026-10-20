@@ -1,39 +1,58 @@
 name: Love Importer CI
-
 on:
   pull_request:
   push:
     branches: [main]
-
 permissions:
   contents: read
-
 jobs:
   validate:
-    name: Validate Love Importer
-    runs-on: ubuntu-latest
+    name: Native import and export (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    defaults:
+      run:
+        shell: bash
     steps:
       - uses: actions/checkout@v4
       - uses: actions/checkout@v4
         with:
           repository: moonstone-sh/moonstone
-          ref: ad1ef8c03f8d6c32711dc35c9fd4aa1661cc4f07
+          ref: 057a0cda49bec32c32d1567df1768119e2a85b2b
           path: .ci/moonstone
+      - uses: actions/checkout@v4
+        with:
+          repository: moonstone-sh/ballad
+          ref: e4fa9336e40ed5294aecfb043ded364587c8c6a5
+          path: .ci/ballad
       - uses: mlugg/setup-zig@v2
         with:
           version: 0.16.0
-      - name: Install release tooling
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install POSIX archive tooling
+        if: runner.os != 'Windows'
         run: |
-          sudo apt-get update
-          sudo apt-get install -y b3sum file jq luajit zstd
-      - name: Build Moonstone CLI
+          if [ "$RUNNER_OS" = Linux ]; then
+            sudo apt-get update
+            sudo apt-get install -y b3sum zstd zip unzip
+          else
+            brew install b3sum zstd
+          fi
+      - name: Build Moonstone
         working-directory: .ci/moonstone
         run: |
           zig build
           echo "$GITHUB_WORKSPACE/.ci/moonstone/zig-out/bin" >> "$GITHUB_PATH"
-      - name: Synchronize project
-        run: moon sync
-      - name: Validate and export release candidate with Ballad
+      - name: Provision portable exporter and project dependencies
         run: |
-          moon run test
-          moon run export
+          moon remove moonstone/ballad --no-sync
+          moon add "path:$GITHUB_WORKSPACE/.ci/ballad" --tool --no-sync
+          moon sync --update
+      - name: Verify imports, managed installation, and relocated launchers
+        run: python tests/native_lifecycle.py

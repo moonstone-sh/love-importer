@@ -8,17 +8,15 @@ artifact therefore contains only compiled runtime code and runtime dependencies,
 while filesystem, staging, manifest, and store modules remain Lua because they
 primarily model explicit artifact operations.
 
-For local development, run the project entrypoint through Moonstone and place
-importer arguments after `--`:
+For local development, compile first, then run the entrypoint through Moonstone:
 
 ```bash
-moon run love-importer -- inspect /Applications/love.app
-moon run love-importer -- import /Applications/love.app --version 11.5
+moon run build
+moon exec -- lua build/src/main.lua inspect /Applications/love.app
+moon exec -- lua build/src/main.lua import /Applications/love.app --version 11.5
 ```
 
-The `love-importer` script explicitly forwards those arguments with `"$@"`; the
-project environment remains Moonstone-owned while the host shell interprets the
-opaque command body.
+Run `moon run build` first. The importer uses Lua 5.4; this host runtime is independent of the LuaJIT runtime inside the LÖVE distribution.
 
 The importer is intentionally ad-hoc about host input formats and strict about output:
 
@@ -30,7 +28,8 @@ Supported v0 inputs:
 
 - macOS `.app`
 - macOS official zip containing one `.app`
-- normalized root containing `bin/love`
+- Windows LÖVE directory or official ZIP, retaining companion DLLs
+- normalized root containing `bin/love` or `bin/love.exe`
 - system executable with `import-system ... --local-only`
 
 Raw AppImage canonical imports are rejected.
@@ -61,9 +60,10 @@ moon exec --global love-importer import /Applications/love.app --version 11.5
 Outputs are written to `dist/love-importer/love-<version>-<target>/` by default and include:
 
 - `files/` normalized artifact root
-- `love-<version>-<target>.tar.zst`
+- `love-<version>-<target>.tar.zst` on POSIX, or `.tar.gz` on Windows
 - `package.toml`
 - `import.toml`
+- `registry/` with the verified descriptor and index used for installation
 
 The normalized runtime package identity is always:
 
@@ -90,14 +90,14 @@ role = "runtime"
 dev = "love ."
 ```
 
-The importer stages the complete `files/` root before hashing and installing it into the Moonstone store. Unknown-provenance imports default to `publish_allowed = false`; `import-system` is always `local_only = true` and does not vendor dynamic library closure.
+The importer stages the complete `files/` root, builds an output-local registry, and delegates installation to `moon add --global --runtime`. It does not modify the CAS or rebuild the index itself. Unknown-provenance imports default to `publish_allowed = false`; `import-system` is always `local_only = true` and does not vendor dynamic library closure.
 
 ## Internal Modules
 
 - `inspect.lua` classifies inputs as `macos_app`, `macos_zip`, `normalized_root`, `system_binary`, `appimage_rejected`, or `unknown`.
 - `normalize.lua` converts a supported inspection result into a staged `files/` root.
 - `staging.lua` owns recursive copies, symlink creation, runtime-root validation, and external-symlink rejection.
-- `manifest.lua` writes import metadata, package descriptors, and current Moonstone store manifests.
+- `manifest.lua` writes import metadata and package descriptors.
 - `store.lua` is the Moonstone integration seam: it calls `moon store import` when available and otherwise uses the current internal store layout fallback.
 
 Long-term, `store.lua` should become a thin wrapper over a Moonstone-owned primitive such as:
@@ -116,3 +116,33 @@ Moonstone contract: `moonstone:run("build", ...)`, `layout.libexec(...)`,
 moon sync
 moon run export
 ```
+
+## Windows development and verification
+
+Use a LÖVE directory containing `love.exe` and its DLLs, or the official ZIP:
+
+```powershell
+moon run build
+moon exec -- lua build/src/main.lua import C:/Downloads/love-11.5-win64.zip --version 11.5 --target x86_64-windows
+```
+
+Windows imports produce `files/bin/love.exe` with companion files beside it.
+ZIP traversal entries and symlinks, directory reparse points, and overlapping
+input/output directories are rejected. Filesystem helpers use the Windows
+host flavor and Windows PowerShell. Command arguments containing cmd
+metacharacters are rejected rather than interpreted. Native Windows imports
+require the pending portable hashing/exporter framework changes pinned in CI.
+
+`python3 tests/native_lifecycle.py` checks real imports and runs the exported
+launcher after relocating it outside the checkout. On Windows it downloads the
+official LÖVE 11.5 ZIP, compares every staged and installed file, and exercises
+unsafe ZIP and overlap rejection. It skips graphical execution. Test runtime
+installation uses an isolated `MOONSTONE_HOME`.
+
+Exporter artifacts bundle the host Lua runtime and carry its concrete target;
+they are not published as `any`. No new release is included in this change.
+
+The tag workflow builds and verifies Linux, macOS, and Windows independently,
+then publishes one descriptor containing their distinct artifact targets. The
+native runtime archives remain immutable GitHub release assets. This PR does
+not trigger that workflow or change the package version.
