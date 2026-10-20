@@ -29,12 +29,12 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: moonstone-sh/moonstone
-          ref: 00a58625bcb9622dca71449789faffb393e0239d
+          ref: 979b3230d7670f14ccdec31b453857facb8ee6f1
           path: .ci/moonstone
       - uses: actions/checkout@v4
         with:
           repository: moonstone-sh/ballad
-          ref: 6362df2def8eb6673f91ede3acab13caec7cdad4
+          ref: aefe6ab031e38e53eebfc5367bcbce482b1cabc8
           path: .ci/ballad
       - uses: mlugg/setup-zig@v2
         with:
@@ -83,7 +83,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: moonstone-sh/ballad
-          ref: 6362df2def8eb6673f91ede3acab13caec7cdad4
+          ref: aefe6ab031e38e53eebfc5367bcbce482b1cabc8
           path: .ci/ballad
       - uses: actions/download-artifact@v4
         with:

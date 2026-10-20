@@ -11,7 +11,7 @@ local function b64(bytes)
   return table.concat(out)
 end
 function M.literal(value)
-  return "[Text.Encoding]::Default.GetString([Convert]::FromBase64String('"..b64(value).."'))"
+  return "([Text.Encoding]::Default.GetString([Convert]::FromBase64String('"..b64(value).."')))"
 end
 function M.ps(script, capture)
   script="$ErrorActionPreference='Stop';$ProgressPreference='SilentlyContinue';[Console]::OutputEncoding=[Text.UTF8Encoding]::new($false);"..script
