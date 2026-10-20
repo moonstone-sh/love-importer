@@ -131,7 +131,7 @@ ZIP traversal entries and symlinks, directory reparse points, and overlapping
 input/output directories are rejected. Filesystem helpers use the Windows
 host flavor and Windows PowerShell. Command arguments containing cmd
 metacharacters are rejected rather than interpreted. Native Windows imports
-require the pending portable hashing/exporter framework changes pinned in CI.
+require Moonstone 0.7.1 or newer. CI pins the matching portable exporter.
 
 `python3 tests/native_lifecycle.py` checks real imports and runs the exported
 launcher after relocating it outside the checkout. On Windows it downloads the
@@ -140,9 +140,8 @@ unsafe ZIP and overlap rejection. It skips graphical execution. Test runtime
 installation uses an isolated `MOONSTONE_HOME`.
 
 Exporter artifacts bundle the host Lua runtime and carry its concrete target;
-they are not published as `any`. No new release is included in this change.
+they are not published as `any`.
 
 The tag workflow builds and verifies Linux, macOS, and Windows independently,
 then publishes one descriptor containing their distinct artifact targets. The
-native runtime archives remain immutable GitHub release assets. This PR does
-not trigger that workflow or change the package version.
+native runtime archives remain immutable GitHub release assets.

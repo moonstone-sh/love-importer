@@ -35,7 +35,7 @@ build_app = ->
   local app
   app = c.create {
     name: "love-importer"
-    version: "0.1.14"
+    version: "0.1.15"
     description: "Import local LÖVE installations into Moonstone runtime artifacts."
 
     root: c.node {
