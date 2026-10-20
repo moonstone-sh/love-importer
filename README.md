@@ -8,12 +8,12 @@ artifact therefore contains only compiled runtime code and runtime dependencies,
 while filesystem, staging, manifest, and store modules remain Lua because they
 primarily model explicit artifact operations.
 
-For local development, run the project entrypoint through Moonstone and place
-importer arguments after `--`:
+For local development, compile first, then run the entrypoint through Moonstone:
 
 ```bash
-moon run love-importer -- inspect /Applications/love.app
-moon run love-importer -- import /Applications/love.app --version 11.5
+moon run build
+moon exec -- lua build/src/main.lua inspect /Applications/love.app
+moon exec -- lua build/src/main.lua import /Applications/love.app --version 11.5
 ```
 
 Run `moon run build` first. The importer uses Lua 5.4; this host runtime is independent of the LuaJIT runtime inside the LÖVE distribution.
@@ -141,3 +141,8 @@ installation uses an isolated `MOONSTONE_HOME`.
 
 Exporter artifacts bundle the host Lua runtime and carry its concrete target;
 they are not published as `any`. No new release is included in this change.
+
+The tag workflow builds and verifies Linux, macOS, and Windows independently,
+then publishes one descriptor containing their distinct artifact targets. The
+native runtime archives remain immutable GitHub release assets. This PR does
+not trigger that workflow or change the package version.
