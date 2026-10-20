@@ -50,7 +50,7 @@ local function package_files(out_dir, files_dir, opts, info)
   if util.windows then
     local entries = out_dir .. "/entries.json"
     util.entries(files_dir, entries)
-    local output = util.capture("moon artifact create --json --out " .. util.quote(artifact) .. " --entries-file " .. util.quote(util.abspath(entries)))
+    local output = util.capture(util.moon_command() .. " artifact create --json --out " .. util.quote(artifact) .. " --entries-file " .. util.quote(util.abspath(entries)))
     local result = require("dkjson").decode(output)
     assert(result and result.contract == "moonstone:artifact-create:v1", "Moonstone artifact creation failed: " .. output)
     os.remove(entries)

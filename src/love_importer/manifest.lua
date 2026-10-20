@@ -73,44 +73,4 @@ function M.write_package_descriptor(out_dir, opts, info, artifact_hash, artifact
   util.write_file(out_dir .. "/package.toml", table.concat(lines, "\n"))
 end
 
-function M.write_store_manifest(store_path, opts, info, artifact_hash)
-  local content = table.concat({
-    "[artifact]",
-    "name = " .. util.toml_string(M.package_name),
-    "version = " .. util.toml_string(opts.version),
-    "kind = \"runtime\"",
-    "source_hash = " .. util.toml_string(artifact_hash),
-    "recipe_hash = " .. util.toml_string(util.b3_string("love-importer-" .. opts.version .. "-" .. opts.target)),
-    "artifact_hash = " .. util.toml_string(artifact_hash),
-    "target = " .. util.toml_string(opts.target),
-    "",
-    "[compat]",
-    "runtime_version = " .. util.toml_string("love@" .. opts.version),
-    "lua_api = \"" .. M.lua_api .. "\"",
-    "lua_abi = \"" .. M.lua_abi .. "\"",
-    "runtime_artifact_hash = \"\"",
-    "",
-    "[origin]",
-    "resolver = \"moonstone\"",
-    "source = " .. util.toml_string(info.source or info.layout),
-    "",
-    "[provenance]",
-    "imported_by = \"moonstone/love-importer\"",
-    "source_kind = " .. util.toml_string(info.layout),
-    "local_only = " .. tostring(info.local_only == true),
-    "publish_allowed = " .. tostring(info.publish_allowed == true),
-    "",
-    "[[provides.runtime]]",
-    "name = \"" .. M.runtime_name .. "\"",
-    "version = " .. util.toml_string(opts.version),
-    "abi = \"" .. M.lua_abi .. "\"",
-    "",
-    "[[provides.bin]]",
-    "name = \"love\"",
-    "path = " .. util.toml_string(info.bin_path or "bin/love"),
-    "",
-  }, "\n")
-  util.write_file(store_path .. "/manifest.toml", content)
-end
-
 return M

@@ -17,7 +17,7 @@ abi = "5.4"
 
 [scripts]
 build = "lua scripts/build.lua"
-export = "moon exec ballad play partiture.lua"
+export = "ballad play partiture.lua"
 love-importer = "lua build/src/main.lua"
 test = "python3 tests/native_lifecycle.py"
 

@@ -148,8 +148,12 @@ function M.moonstone_home()
   return os.getenv("MOONSTONE_HOME") or ((os.getenv("HOME") or ".") .. "/.local/share/moonstone")
 end
 
+function M.moon_command()
+  return M.quote(os.getenv("MOONSTONE_CLI") or os.getenv("MOONSTONE_BIN") or "moon")
+end
+
 function M.b3_file(path)
-  local hash = M.capture('moon artifact hash -- ' .. M.quote(M.abspath(path)))
+  local hash = M.capture(M.moon_command() .. ' artifact hash -- ' .. M.quote(M.abspath(path)))
   assert(#hash == 64 and hash:match('^[0-9a-f]+$'), 'Moonstone BLAKE3 hashing failed: ' .. path)
   return 'b3:' .. hash
 end

@@ -11,7 +11,7 @@ import zipfile
 
 sys.stdout.reconfigure(encoding='utf-8')
 repo = Path(__file__).resolve().parents[1]
-moon = os.environ.get('MOONSTONE_BIN') or shutil.which('moon')
+moon = os.environ.get('MOONSTONE_CLI') or os.environ.get('MOONSTONE_BIN') or shutil.which('moon')
 assert moon
 moon = str(Path(moon).resolve())
 os.environ['PATH'] = str(Path(moon).parent) + os.pathsep + os.environ.get('PATH', '')

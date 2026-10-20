@@ -37,3 +37,9 @@ role = "runtime"
 
 System-binary imports are local-only by design. The repository README documents
 supported input formats, trust boundaries, and the importer architecture.
+
+Windows development supports official LÖVE ZIPs and directories with companion
+DLLs. Imports are installed by Moonstone through a generated local registry;
+the importer does not write CAS directories directly. These changes depend on
+the portable Moonstone/Ballad revisions pinned by the repository CI and are not
+yet part of a new tagged release.
